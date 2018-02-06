@@ -1,5 +1,5 @@
 {
-    "name": "dflydev/git-subsplit-github-webhook",
+    "name": "qboot/git-subsplit-github-webhook",
     "description": "GitHub WebHook for Git subsplits managed by dflydev-git-subsplit",
     "keywords": ["github", "webhook", "subsplit"],
     "license": "MIT",
