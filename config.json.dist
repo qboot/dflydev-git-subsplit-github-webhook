@@ -6,6 +6,14 @@
             "url": "git@github.com:orga/private-repo.git",
             "splits": [
                 "src/public:git@github.com:orga/public-repo.git"
+            ],
+            "heads": [
+                "master",
+                "2.0"
+            ],
+            "tags": [
+                "v1.0.0",
+                "v1.0.3"
             ]
         }
     }
