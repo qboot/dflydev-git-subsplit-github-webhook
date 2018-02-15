@@ -71,10 +71,14 @@ function processPayload($payload, $config) {
     if (preg_match('/refs\/tags\/(.+)$/', $ref, $matches)) {
         $publishCommand[] = escapeshellarg('--rebuild-tags');
         $publishCommand[] = escapeshellarg('--no-heads');
-        $publishCommand[] = escapeshellarg(sprintf('--tags=%s', $matches[1]));
+        $publishCommand[] = isset($project['tags'])
+            ? escapeshellarg(sprintf('--tags=%s', implode(' ', $project['tags'])))
+            : escapeshellarg(sprintf('--tags=%s', $matches[1]));
     } elseif (preg_match('/refs\/heads\/(.+)$/', $ref, $matches)) {
         $publishCommand[] = escapeshellarg('--no-tags');
-        $publishCommand[] = escapeshellarg(sprintf('--heads=%s', $matches[1]));
+        $publishCommand[] = isset($project['heads'])
+            ? escapeshellarg(sprintf('--heads=%s', implode(' ', $project['heads'])))
+            : escapeshellarg(sprintf('--heads=%s', $matches[1]));
     } else {
         echo sprintf('Skipping request for URL %s (unexpected reference detected: %s)', $data['repository']['ssh_url'], $ref) . "\n";
         return;

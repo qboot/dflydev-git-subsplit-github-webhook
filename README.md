@@ -78,6 +78,14 @@ Configuration
             "url": "git@github.com:orga/private-repo.git",
             "splits": [
                 "src/public:git@github.com:orga/public-repo.git"
+            ],
+            "heads": [
+                "master",
+                "2.0"
+            ],
+            "tags": [
+                "v1.0.0",
+                "v1.0.3"
             ]
         }
     }
@@ -126,6 +134,13 @@ Each project description object can have the following properties:
    An array of subsplit definitions as defined by [git-subsplit][2].
    The pattern for the splits is `${subPath}:${url}`.
 
+ * **heads** *(optional)*:
+   An array of heads. If specified, git-subsplit will only sync these branches, 
+   no matter which branches the upstream repository knows about.
+
+* **tags** *(optional)*:
+   An array of tags. If specified, git-subsplit will only sync these tags, no 
+   matter which tags the upstream repository knows about.
 
 License
 -------
