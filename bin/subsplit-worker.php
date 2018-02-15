@@ -1,6 +1,8 @@
 <?php
 
-require __DIR__.'/../vendor/autoload.php';
+error_reporting(E_ALL);
+set_time_limit(0);
+ob_implicit_flush();
 
 $configFilename = file_exists(__DIR__.'/../config.json')
     ? __DIR__.'/../config.json'
@@ -8,17 +10,43 @@ $configFilename = file_exists(__DIR__.'/../config.json')
 
 $config = json_decode(file_get_contents($configFilename), true);
 
-$start = time();
+$socket_path = sys_get_temp_dir() . '/subsplit_worker.sock';
+$socket_address = "unix://$socket_path";
+$user = 'www-data';
 
-$redis = new Predis\Client(array('read_write_timeout' => 0,));
-while ($body = $redis->brpoplpush('dflydev-git-subsplit:incoming', 'dflydev-git-subsplit:processing', 0)) {
-    $data = json_decode($body, true);
+@unlink($socket_path);
+
+if (!$socket = stream_socket_server($socket_address, $errNo, $errMsg)) {
+    echo "Couldn't create stream_socket_server: [$errNo] $errMsg";
+    exit(1);
+}
+
+chown($socket_path, $user);
+chgrp($socket_path, $user);
+
+while (true) {
+    $client = stream_socket_accept($socket, -1);
+
+    while (true) {
+        if (stream_get_meta_data($client)['eof']) {
+            break;
+        }
+        if (!$payload = fgets($client)) {
+            continue;
+        }
+
+        processPayload($payload, $config);
+    }
+
+    fclose($client);
+}
+
+fclose($socket);
+
+function processPayload($payload, $config) {
+    $data = json_decode($payload, true);
     $name = null;
     $project = null;
-
-    $data['dflydev_git_subsplit'] = array(
-        'processed_at' => time(),
-    );
 
     foreach ($config['projects'] as $testName => $testProject) {
         if ($testProject['url'] === $data['repository']['ssh_url']) {
@@ -29,22 +57,16 @@ while ($body = $redis->brpoplpush('dflydev-git-subsplit:incoming', 'dflydev-git-
     }
 
     if (null === $name) {
-        print(sprintf('Skipping request for URL %s (not configured)', $data['repository']['ssh_url'])."\n");
-
-        $redis->lrem('dflydev-git-subsplit:processing', 1, $body);
-        $redis->lpush('dflydev-git-subspilt:failures', json_encode($data));
-        continue;
+        echo sprintf('Skipping request for URL %s (not configured)', $data['repository']['ssh_url']) . "\n";
+        return;
     }
-
-    $data['dflydev_git_subsplit']['name'] = $name;
-    $data['dflydev_git_subsplit']['project'] = $project;
 
     $ref = $data['ref'];
 
-    $publishCommand = array(
+    $publishCommand = [
         'git subsplit publish',
         escapeshellarg(implode(' ', $project['splits'])),
-    );
+    ];
 
     if (preg_match('/refs\/tags\/(.+)$/', $ref, $matches)) {
         $publishCommand[] = escapeshellarg('--rebuild-tags');
@@ -54,45 +76,31 @@ while ($body = $redis->brpoplpush('dflydev-git-subsplit:incoming', 'dflydev-git-
         $publishCommand[] = escapeshellarg('--no-tags');
         $publishCommand[] = escapeshellarg(sprintf('--heads=%s', $matches[1]));
     } else {
-        print sprintf('Skipping request for URL %s (unexpected reference detected: %s)', $data['repository']['ssh_url'], $ref)."\n";
-
-        $redis->lrem('dflydev-git-subsplit:processing', 1, $body);
-        $redis->lpush('dflydev-git-subspilt:failures', json_encode($data));
-        continue;
+        echo sprintf('Skipping request for URL %s (unexpected reference detected: %s)', $data['repository']['ssh_url'], $ref) . "\n";
+        return;
     }
 
-    $repositoryUrl = isset($project['repository-url'])
-        ? $project['repository-url']
-        : $project['url'];
+    $repositoryUrl = $project['url'];
 
-    print sprintf('Processing subsplit for %s (%s)', $name, $ref)."\n";
+    echo sprintf('Processing subsplit for %s (%s)', $name, $ref) . "\n";
 
-    $projectWorkingDirectory = $config['working-directory'].'/'.$name;
-    if (!file_exists($projectWorkingDirectory)) {
-        print sprintf('Creating working directory for project %s (%s)', $name, $projectWorkingDirectory)."\n";
-        mkdir($projectWorkingDirectory, 0750, true);
+    $workingDirectory = $config['working-directory'] . '/' . $name;
+    if (!file_exists($workingDirectory)) {
+        echo sprintf('Creating working directory for project %s (%s)', $name, $workingDirectory) . "\n";
+        mkdir($workingDirectory, 0750, true);
     }
 
-    $command = implode(' && ', array(
-        sprintf('cd %s', $projectWorkingDirectory),
+    $command = implode(' && ', [
+        sprintf('cd %s', $workingDirectory),
         sprintf('( git subsplit init %s || true )', $repositoryUrl),
         'git subsplit update',
         implode(' ', $publishCommand)
-    ));
+    ]);
 
     passthru($command, $exitCode);
 
     if (0 !== $exitCode) {
-        print sprintf('Command %s had a problem, exit code %s', $command, $exitCode)."\n";
-
-        $redis->lrem('dflydev-git-subsplit:processing', 1, $body);
-        $redis->lpush('dflydev-git-subspilt:failures', json_encode($data));
-        continue;
+        echo sprintf('Command %s had a problem, exit code %s', $command, $exitCode) . "\n";
+        return;
     }
-
-    $redis->lrem('dflydev-git-subsplit:processing', 1, $body);
-    $redis->rpush('dflydev-git-subsplit:processed', json_encode($data));
 }
-
-$seconds = time() - $start;
-throw new \RuntimeException(sprintf('Something strange happened after %s seconds', $seconds));
