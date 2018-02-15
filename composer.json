@@ -15,10 +15,6 @@
             "homepage": "http://beausimensen.com"
         }
     ],
-    "require": {
-        "php": ">=5.3.3",
-        "predis/predis": "0.8.*"
-    },
     "extra": {
         "branch-alias": {
             "dev-master": "1.0-dev"

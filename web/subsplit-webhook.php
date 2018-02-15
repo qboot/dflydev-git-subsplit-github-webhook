@@ -1,6 +1,6 @@
 <?php
 
-require __DIR__.'/../vendor/autoload.php';
+error_reporting(E_ALL);
 
 $configFilename = file_exists(__DIR__.'/../config.json')
     ? __DIR__.'/../config.json'
@@ -8,7 +8,9 @@ $configFilename = file_exists(__DIR__.'/../config.json')
 
 $config = json_decode(file_get_contents($configFilename), true);
 
-if (!array_key_exists('webhook-secret', $config)) {
+$address = 'unix://' . sys_get_temp_dir() . '/subsplit_worker.sock';
+
+if (!isset($config['webhook-secret'])) {
     header('HTTP/1.1 403 Forbidden');
     echo '"webhook-secret" key is missing in your configuration.';
     exit;
@@ -31,10 +33,12 @@ if (!hash_equals($signature, $hash)) {
     exit;
 }
 
-$body = $_POST['payload'];
+if (!$client = stream_socket_client($address, $errNo, $errMsg)) {
+    echo "Couldn't create stream_socket_client: [$errNo] $errMsg";
+    exit(1);
+}
 
-$redis = new Predis\Client();
-
-$redis->lpush('dflydev-git-subsplit:incoming', $body);
+fwrite($client, $_POST['payload']);
+fclose($client);
 
 echo "Thanks.\n";

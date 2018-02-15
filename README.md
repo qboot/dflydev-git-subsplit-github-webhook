@@ -7,15 +7,14 @@ Automates the process of keeping one-way read-only subtree splits up to date
 with the source repository.
 
 The WebHook works in two parts, a web listener and a worker. The web listener
-adds requests to Redis and the worker processes the requests.
+sends requets to worker by a unix socket.
 
 The worker will interact with the system's git as the user running the worker.
 **This means that the user running the worker should have its key added to
 the appropriate GitHub accounts.**
 
 During testing it would make sense to run the worker manually. For production
-deployments it would probably make more sense to runt he worker using something
-along the lines of [upstart][6] or [supervisor][7].
+deployments it would probably make more sense to write a small `systemd` file.
 
 
 Usage
@@ -25,7 +24,7 @@ Usage
 
 Ensure that [git-subsplit][2] is installed correctly. If is not available
 in your version of git (likely true for versions older than 1.7.11)
-please install it manually from [here][5].
+please install it manually from [here][3].
 
 You should initialize subsplit with a git repository:
 
@@ -37,15 +36,7 @@ It will create a `.subsplit` working directory that you will use later.
 ### Installation
 
     git clone git@github.com:qboot/dflydev-git-subsplit-github-webhook.git
-    mv dflydev-git-subsplit-github-webhook/ webhook/
-    cd webhook
-    composer install
-
-N.B. If you need composer : [https://getcomposer.org/download/][8]
-
-### Redis
-
-Ensure that the Redis server is running.
+    mv dflydev-git-subsplit-github-webhook/ webhook/ && cd webhook
 
 ### Configure
 
@@ -158,9 +149,5 @@ Thanks Igor. :)
 
 [1]: https://github.com
 [2]: https://github.com/dflydev/git-subsplit
-[3]: http://getcomposer.org
+[3]: https://github.com/apenwarr/git-subtree
 [4]: https://igor.io
-[5]: https://github.com/apenwarr/git-subtree
-[6]: http://upstart.ubuntu.com
-[7]: http://supervisord.org
-[8]: https://getcomposer.org/download/
