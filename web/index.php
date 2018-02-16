@@ -8,7 +8,7 @@ $configFilename = file_exists(__DIR__.'/../config.json')
 
 $config = json_decode(file_get_contents($configFilename), true);
 
-$address = 'unix://' . sys_get_temp_dir() . '/subsplit_worker.sock';
+$address = 'unix:///var/run/subsplit_worker.sock';
 
 if (!isset($config['webhook-secret'])) {
     header('HTTP/1.1 403 Forbidden');
