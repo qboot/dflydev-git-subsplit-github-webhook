@@ -8,13 +8,11 @@
                 "src/public:git@github.com:orga/public-repo.git"
             ],
             "heads": [
-                "master",
-                "2.0"
+                "master"
             ],
-            "tags": [
-                "v1.0.0",
-                "v1.0.3"
-            ]
+            "options": {
+                "no-tags": true
+            }
         }
     }
 }

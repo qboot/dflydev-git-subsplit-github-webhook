@@ -28,15 +28,15 @@ please install it manually from [here][3].
 
 You should initialize subsplit with a git repository:
 
-    cd /home/myuser
+    mkdir -p /home/myuser/.subsplit/myproject && cd /home/myuser/.subsplit/myproject
     git subsplit init git@github.com:orga/repo.git
 
 It will create a `.subsplit` working directory that you will use later.
 
 ### Installation
 
-    git clone git@github.com:qboot/dflydev-git-subsplit-github-webhook.git
-    mv dflydev-git-subsplit-github-webhook/ webhook/ && cd webhook
+    git clone git@github.com:qboot/dflydev-git-subsplit-github-webhook.git webhook
+    cd webhook
 
 ### Configure
 
@@ -48,11 +48,11 @@ Don't forget to change the `webhook-secret` to secure your webhook.
 
 Setup a virtual host pointing to `web/` as its docroot. Assuming the virtual host
 is **webhook.example.com**, test the WebHook by visiting the following URL:
-**http://webhook.example.com/subsplit-webhook.php**
+**http://webhook.example.com/index.php**
 
 ### Worker
 
-Start the worker by running `php bin/subsplit-worker.php`.
+Start the worker by running `php bin/worker.php`.
 
 ### GitHub
 
@@ -141,6 +141,11 @@ Each project description object can have the following properties:
 * **tags** *(optional)*:
    An array of tags. If specified, git-subsplit will only sync these tags, no 
    matter which tags the upstream repository knows about.
+
+* **options** *(optional)*:
+   An object containing options.
+   `"no-tags": true` disable syncing of any tags.
+   `"no-heads": true` disable syncing of any heads.
 
 License
 -------
