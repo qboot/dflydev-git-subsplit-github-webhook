@@ -9,9 +9,13 @@ with the source repository.
 The WebHook works in two parts, a web listener and a worker. The web listener
 sends requets to worker by a unix socket.
 
-The worker will interact with the system's git as the user running the worker.
-**This means that the user running the worker should have its key added to
-the appropriate GitHub accounts.**
+The worker should always be run as `root`. 
+- It will interact with the system's git as the user defined in 
+`SUBSPLIT_DEFAULT_USER` env variable (default to `debian` user).
+**This means that this user should have its key added to the appropriate
+GitHub accounts.**
+- It will interact with the system's web server as the user defined in
+`SUBSPLIT_SOCKET_USER` env variable (default to `www-data` user).
 
 During testing it would make sense to run the worker manually. For production
 deployments it would probably make more sense to write a small `systemd` file.
@@ -52,7 +56,7 @@ is **webhook.example.com**, test the WebHook by visiting the following URL:
 
 ### Worker
 
-Start the worker by running `php bin/worker.php`.
+Start the worker by running `sudo php bin/worker.php`.
 
 ### GitHub
 
