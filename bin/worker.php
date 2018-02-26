@@ -105,12 +105,12 @@ function processPayload($payload, $config) {
         mkdir($workingDirectory, 0750, true);
     }
 
+    $become = sprintf('sudo -u %s ', $config['default_user']);
     $command = implode(' && ', [
         sprintf('cd %s', $workingDirectory),
-        sprintf('( git subsplit init %s || true )', $repositoryUrl),
-        'git subsplit update',
-        implode(' ', $publishCommand),
-        "chown -R {$config['default_user']}:{$config['default_user']} ."
+        sprintf('(%s git subsplit init %s || true )', $become, $repositoryUrl),
+        $become . 'git subsplit update',
+        $become . implode(' ', $publishCommand),
     ]);
 
     passthru($command, $exitCode);
