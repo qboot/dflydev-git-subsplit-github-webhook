@@ -28,6 +28,10 @@ chgrp($socket_path, $socket_user);
 while (true) {
     $client = stream_socket_accept($socket, -1);
 
+    if (!$client) {
+        continue;
+    }
+
     while (true) {
         if (stream_get_meta_data($client)['eof']) {
             break;
